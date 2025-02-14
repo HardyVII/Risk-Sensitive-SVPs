@@ -174,7 +174,7 @@ def value_iter_near_greedy_prob(env, gamma, zeta, V_star=None, rho=0.1, theta=1e
 
             Q_s = np.zeros(env.nA)
             for a in P[s]:
-                Q_s[a] = sum(p * (r + gamma * V[s_]) for p, s_, r, done in P[s][a])
+                Q_s[a] = sum(p * (r + (gamma * V[s_]) * (1 - done)) for p, s_, r, done in P[s][a])
 
             Pi_S = np.argwhere(Q_s > (1 - zeta) * V_star[s])  # lower bound for return
             if len(Pi_S) > 0:  # improve the lower bound
