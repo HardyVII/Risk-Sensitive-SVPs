@@ -130,7 +130,7 @@ def visualize_svp(π, barrier_states, lifegate_states, dead_end, deads_states, t
                     # If action=0 is "no-op," you could skip drawing or draw a dot:
                     if a == 0:
                         # For example, draw a small dot for "no move"
-                        ax.plot(x, y, 'ko', markersize=4, color="green")
+                        ax.plot(x, y, 'o', markersize=4, color="green")
                     else:
                         # End point is the start plus offset
                         x_end = x + dx
