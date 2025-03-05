@@ -1,11 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.ma.core import shape
+
 from lifegate_for_SVPs import LifeGate
-from SVPs_algos import value_iter, value_iter_near_greedy_prob, V2Q
+from SVPs_algos import value_iter, value_iter_near_greedy_prob, V2Q, value_iter_near_greedy
 import matplotlib.patches as patches
 
 
-def MDP_lifegate(env, types='regular'):
+def MDP_lifegate(env, types='regular', deadend_threshold=0.7):
     P = {}
     width, height = env.scr_w, env.scr_h
     for y in range(height):
@@ -30,7 +32,7 @@ def MDP_lifegate(env, types='regular'):
                         done = True
                         if types == 'death' or types == 'regular':
                             reward = -1.0
-                    P[s][a].append((0.7, s + 1, reward, done))
+                    P[s][a].append((deadend_threshold, s + 1, reward, done))
                     P[s][a].append((0.3, s, 0, False))
                     continue
 
@@ -272,6 +274,52 @@ def visualize_ded(Q_d, barrier_states, lifegate_states, dead_end, deads_states, 
     plt.tight_layout()
     plt.show()
 
+def bad_policies(Q_d, env, threshold):
+    π_bad = np.zeros((env.nS, env.nA))
+    for s in range(env.nS):
+        for a in range(env.nA):
+            if Q_d[s, a] <= -threshold:
+                π_bad[s, a] = 1
+    return π_bad
+
+
+def evaluate_svp(π_svp):
+    return np.all(np.sum(π_svp, axis=1) > 0)
+
+
+def search_parameters(env, gamma, zeta_values, deadend_threshold_values, theta=1e-10, max_iter=1000):
+    valid_pairs = []
+    all_results = {}
+    # First, compute V_star with the "regular" MDP
+    # (We'll use this as our reference value function.)
+    for dt in deadend_threshold_values:
+        for zeta in zeta_values:
+            # Create a new environment copy or reset your env as needed.
+            # Here we update the MDP with the candidate deadend_threshold.
+            env.P = MDP_lifegate(env, types='regular', deadend_threshold=dt)
+            env.nS = env.scr_w * env.scr_h
+            env.nA = env.nb_actions
+
+            # Compute the optimal value function using standard value iteration.
+            # (Assuming your value_iter returns (V, pi) – we only need V_star.)
+            V_star, _ = value_iter(env, gamma, theta=theta)
+            # Now run the near-greedy value iteration to get the set-valued policy.
+            V, π_svp = value_iter_near_greedy(env, gamma, zeta, V_star, theta=theta, max_iter=max_iter)
+
+            # Record some statistics (like the minimum number of recommended actions)
+            rec_actions = np.sum(π_svp, axis=1)  # number of recommended actions per state
+            min_recs = np.min(rec_actions)
+
+            all_results[(zeta, dt)] = (π_svp, min_recs)
+            # If every state has at least one recommended action, record the pair.
+            if min_recs > 0:
+                valid_pairs.append((zeta, dt))
+                print(
+                    f"Valid pair found: ζ = {zeta:.3f}, deadend_threshold = {dt:.3f} (min recommended actions = {min_recs})")
+            else:
+                print(f"Pair ζ = {zeta:.3f}, deadend_threshold = {dt:.3f} FAILS (min recommended actions = {min_recs})")
+    return valid_pairs, all_results
+
 
 def main():
     # random seed
@@ -285,8 +333,8 @@ def main():
     # 1) Compute the optimal value function and policies using value iteration.
     V_star, π_star = value_iter(env=env, gamma=1)
     # 2) Compute the worst value function and near-optimal policies using near greedy
-    V_SVP, π_SVP = value_iter_near_greedy_prob(env=env, gamma=1, rho=0.1,
-                                               V_star=V_star, zeta=0.1, theta=1e-10, max_iter=1000)
+    V_SVP, π_SVP = value_iter_near_greedy(env=env, gamma=1,
+                                               V_star=V_star, zeta=0.01, theta=1e-10, max_iter=1000)
 
 
     # Initial setup for lifegate environment.
@@ -327,10 +375,37 @@ def main():
     deads_states = [8, 9, 19, 29, 39, 49, 59, 69, 79, 89, 99]
 
     Q_d = V2Q(env_death, V_d, 1)
-    visualize_ded(Q_d, barrier_states, lifegate_states, dead_ends, deads_states, 'Dead-End Policy')
+    # visualize_ded(Q_d, barrier_states, lifegate_states, dead_ends, deads_states, 'Dead-End Policy')
+    #
+    # visualize_svp(π_SVP, barrier_states, lifegate_states, dead_ends, deads_states, 'Set-Valued Policy')
+    print(V_star)
 
-    visualize_svp(π_SVP, barrier_states, lifegate_states, dead_ends, deads_states, 'Set-Valued Policy')
-
+    # # Define candidate parameter ranges
+    # zeta_values = np.linspace(0.0, 0.5, 6)  # e.g., 0, 0.1, 0.2, 0.3, 0.4, 0.5
+    # deadend_threshold_values = np.linspace(0.5, 0.9, 5)  # e.g., 0.5, 0.6, 0.7, 0.8, 0.9
+    #
+    # # Create an instance of your LifeGate environment.
+    # random_state = np.random.RandomState(1234)
+    # env = LifeGate(state_mode='tabular', rng=random_state, death_drag=0.4, fixed_life=True)
+    #
+    # # Run the parameter search.
+    # valid_pairs, all_results = search_parameters(env, 1, zeta_values, deadend_threshold_values)
+    #
+    # # Optionally, visualize the distribution of recommended actions for a chosen parameter pair.
+    # if valid_pairs:
+    #     chosen_zeta, chosen_dt = valid_pairs[0]
+    #     SVP, min_recs = all_results[(chosen_zeta, chosen_dt)]
+    #     print(
+    #         f"Visualizing SVP for ζ = {chosen_zeta:.3f}, deadend_threshold = {chosen_dt:.3f} (min recommended actions = {min_recs})")
+    #     # For visualization, you can plot a histogram of the number of recommended actions per state:
+    #     rec_actions = np.sum(SVP, axis=1)
+    #     plt.hist(rec_actions, bins=np.arange(0, env.nb_actions + 2) - 0.5, edgecolor='black')
+    #     plt.xlabel("Number of recommended actions")
+    #     plt.ylabel("Number of states")
+    #     plt.title("Distribution of recommended actions per state")
+    #     plt.show()
+    # else:
+    #     print("No parameter pair found that gives at least one recommended action in every state.")
 
 if __name__ == '__main__':
     main()
