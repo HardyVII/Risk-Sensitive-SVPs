@@ -110,7 +110,7 @@ def value_iter_near_greedy(env, gamma, zeta, V_star=None, theta=1e-10, max_iter=
     Q = V2Q(env, V, gamma)
     Pi = np.zeros_like(Q)
     for s in range(env.nS):
-        Pi[s] = (Q[s] > (1 - zeta) * V_star[s])
+        Pi[s] = (Q[s] >= (1 - zeta) * V_star[s])
     policies.append(Pi)
 
     while True:
@@ -122,8 +122,12 @@ def value_iter_near_greedy(env, gamma, zeta, V_star=None, theta=1e-10, max_iter=
             for a in P[s]:
                 Q_s[a] = sum(p * (r + gamma * V[s_]) for p, s_, r, done in P[s][a])
 
-            Q_cutoff = (1 - zeta) * V_star[s]  # lower bound for return
-            Pi_S = np.argwhere(Q_s > Q_cutoff)
+            if V_star[s] > 0:
+                Q_cutoff = (1 - zeta) * V_star[s]  # lower bound for return
+            else:
+                Q_cutoff = V_star[s] - zeta * abs(V_star[s])
+
+            Pi_S = np.argwhere(Q_s >= Q_cutoff)
             if len(Pi_S) > 0:  # improve the lower bound
                 new_v = Q_s[Pi_S].min()  # using the worst best action
             else:
@@ -136,17 +140,18 @@ def value_iter_near_greedy(env, gamma, zeta, V_star=None, theta=1e-10, max_iter=
         Q = V2Q(env, V, gamma)
         Pi = np.zeros_like(Q)
         for s in range(env.nS):
-            Pi[s] = (Q[s] > (1 - zeta) * V_star[s])
+            if V_star[s] >= 0:
+                threshold = (1 - zeta) * V_star[s]
+            else:
+                threshold = V_star[s] - zeta * abs(V_star[s])
+            Pi[s] = (Q[s] >= threshold)
         policies.append(Pi)
 
         n_iter += 1
         if ((policies[-1] == policies[-2]).all() and delta < theta) or n_iter >= max_iter:
             break
 
-    return V, {
-        'policies': policies,
-        'delta': delta,
-    }
+    return V, policies[-1]
 
 
 def value_iter_near_greedy_prob(env, gamma, zeta, V_star=None, rho=0.1, theta=1e-10, max_iter=1000):
@@ -201,7 +206,10 @@ def value_iter_near_greedy_prob(env, gamma, zeta, V_star=None, rho=0.1, theta=1e
         if delta < theta or n_iter >= max_iter:
             break
 
-    return V, policies[-1]
+    return V, {
+        'policies': policies,
+        'delta': delta,
+    }
 
 
 def qlearn(
