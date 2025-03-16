@@ -374,7 +374,6 @@ def main():
     # 3) Compute the V_r and r-policies.
     V_r, π_r = value_iter(env=env_lifegate, gamma=1)
 
-
     # Initial setup for death environment.
     env_death = LifeGate(state_mode='tabular', rng=random_state, death_drag=0.4, fixed_life=True)
     env_death.P = MDP_lifegate(env, types='death')
