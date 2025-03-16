@@ -151,7 +151,17 @@ def value_iter_near_greedy(env, gamma, zeta, V_star=None, theta=1e-10, max_iter=
         if ((policies[-1] == policies[-2]).all() and delta < theta) or n_iter >= max_iter:
             break
 
-    return V, policies[-1]
+    svp_policies = policies[-1]
+    _, optimal_policies = value_iter(env, gamma, theta)
+    for s in range(env.nS):
+        recommendation_exist = False
+        for a in range(env.nA):
+            if svp_policies[s][a] != 0: recommendation_exist = True
+        if not recommendation_exist:
+            for a in range(env.nA):
+                svp_policies[s][a] = optimal_policies[s][a]
+
+    return V, svp_policies
 
 
 def value_iter_near_greedy_prob(env, gamma, zeta, V_star=None, rho=0.1, theta=1e-10, max_iter=1000):
