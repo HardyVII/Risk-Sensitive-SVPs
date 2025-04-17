@@ -94,14 +94,18 @@ def value_iter(env, gamma, theta=1e-10):
     return V, π
 
 
-def value_iter_near_greedy(env, gamma, zeta, V_star=None, theta=1e-10, max_iter=1000):
+def value_iter_near_greedy(env, gamma, zeta, V_star=None, window=10, theta=1e-10, max_iter=1000):
     if not hasattr(env, 'P'):
         raise NotImplementedError
     if V_star is None:
         assert False
 
+    iter = 0
+    is_max_iter = False
+
     P = env.P
     V = V_star.copy().astype(float)
+    # V = np.zeros(env.nS)
     policies = []
     n_iter = 0
 
@@ -119,7 +123,7 @@ def value_iter_near_greedy(env, gamma, zeta, V_star=None, theta=1e-10, max_iter=
 
             Q_s = np.zeros(env.nA)
             for a in P[s]:
-                Q_s[a] = sum(p * (r + gamma * V[s_]) for p, s_, r, done in P[s][a])
+                Q_s[a] = np.sum(p * (r + gamma * V[s_] * (1 - done)) for p, s_, r, done in P[s][a])
 
             if V_star[s] > 0:
                 Q_cutoff = (1 - zeta) * V_star[s]  # lower bound for return
@@ -147,8 +151,27 @@ def value_iter_near_greedy(env, gamma, zeta, V_star=None, theta=1e-10, max_iter=
         policies.append(Pi)
 
         n_iter += 1
-        if ((policies[-1] == policies[-2]).all() and delta < theta) or n_iter >= max_iter:
+        if ((policies[-1] == policies[-2]).all() and delta < theta):
+            iter = n_iter
             break
+        if n_iter >= max_iter:
+            is_max_iter = True
+            iter = n_iter
+            break
+
+        ## check if the current policy is similar to the previous policy
+        # converged = False
+        # start = max(0, len(policies) - window - 1)
+        # for prev_policy in policies[start:-1]:
+        #     # if ((policies[-1] == prev_policy).all() and delta < theta):
+        #     if (delta < theta):
+        #         converged = True
+        #         break
+        # if converged or n_iter >= max_iter:
+        #     iter = n_iter
+        #     if n_iter >= max_iter:
+        #         is_max_iter = True
+        #     break
 
     svp_policies = policies[-1]
     _, optimal_policies = value_iter(env, gamma, theta)
@@ -160,7 +183,7 @@ def value_iter_near_greedy(env, gamma, zeta, V_star=None, theta=1e-10, max_iter=
             for a in range(env.nA):
                 svp_policies[s][a] = optimal_policies[s][a]
 
-    return V, svp_policies
+    return V, svp_policies, is_max_iter, iter
 
 
 def value_iter_near_greedy_prob(env, gamma, zeta, V_star=None, rho=0.1, theta=1e-10, max_iter=1000):

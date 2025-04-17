@@ -331,7 +331,7 @@ def search_parameters(env, env_death, gamma, zeta_values, threshold_values, thet
             # Check for conflict: i.e., an action is recommended by both SVP and the bad policy.
             conflict = policy_conflict(π_svp, π_bad)
             if not conflict:
-                valid_pairs.append((zeta, dt))
+                valid_pairs.append([zeta, dt])
                 print(f"Valid pair found: ζ = {zeta:.3f}, deadend_threshold = {dt:.3f}")
             else:
                 print(f"Pair ζ = {zeta:.3f}, deadend_threshold = {dt:.3f} FAILS")
@@ -413,7 +413,6 @@ def main():
 
     # Run the parameter search.
     valid_pairs = search_parameters(env, env_death, 1, zeta_values, deadend_threshold_values)
-    print(valid_pairs)
 
 if __name__ == '__main__':
     main()
