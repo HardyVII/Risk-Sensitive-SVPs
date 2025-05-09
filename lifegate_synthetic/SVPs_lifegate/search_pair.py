@@ -15,63 +15,125 @@ def MDP_lifegate(env, types='regular', deadend_threshold=0.7):
             for a in env.legal_actions:
                 P[s][a] = []
                 new_x, new_y = x, y
-                reward, done = 0.0, False
-
-                # dead-end special drag
+                reward = 0.0
+                done = False
                 if [x, y] in env.dead_ends:
-                    if [x+1, y] in env.deaths:
+                    if [x + 1, y] in env.deaths:
                         done = True
-                        if types in ('death','regular'):
+                        if types in ['death', 'regular']:
                             reward = -1.0
-                    P[s][a].append((deadend_threshold, s+1, reward, done))
-                    P[s][a].append((0.3, s, 0.0, False))
+                    P[s][a].append((deadend_threshold, s + 1, reward, done))
+                    P[s][a].append((1 - deadend_threshold, s, 0, False))
                     continue
-
-                # terminal death
                 if [new_x, new_y] in env.deaths:
-                    if types in ('death','regular'):
+                    if types in ['death', 'regular']:
                         reward = -1.0
                     P[s][a].append((1.0, s, reward, True))
                     continue
-                # terminal recovery
                 if [new_x, new_y] in env.recoveries:
-                    if types in ('recovery','regular'):
-                        reward = +1.0
+                    if types in ['recovery', 'regular']:
+                        reward = 1.0
                     P[s][a].append((1.0, s, reward, True))
                     continue
-
-                # move
-                if a==1: new_y -= 1
-                elif a==2: new_y += 1
-                elif a==3: new_x -= 1
-                elif a==4: new_x += 1
-
-                # bounce off
-                if (new_x<0 or new_y<0 or new_x>=width or new_y>=height
-                  or [new_x,new_y] in env.barriers):
+                if a == 1:
+                    new_y = y - 1
+                elif a == 2:
+                    new_y = y + 1
+                elif a == 3:
+                    new_x = x - 1
+                elif a == 4:
+                    new_x = x + 1
+                if new_x < 0 or new_y < 0 or new_x >= width or new_y >= height or [new_x, new_y] in env.barriers:
                     new_x, new_y = x, y
-
-                s_next = new_y*width + new_x
-                s_drag = s+1
-                reward_drag, done_drag = 0.0, False
-
-                if [new_x,new_y] in env.deaths:
+                reward_drag = 0.0
+                done_drag = False
+                s_next = new_y * width + new_x
+                s_drag = s + 1
+                if [new_x, new_y] in env.deaths:
                     done = True
-                    if types in ('death','regular'):
+                    if types in ['death', 'regular']:
                         reward = -1.0
-                elif [new_x,new_y] in env.recoveries:
+                elif [new_x, new_y] in env.recoveries:
                     done = True
-                    if types in ('recovery','regular'):
-                        reward = +1.0
-
-                if [x+1, y] in env.deaths:
+                    if types in ['recovery', 'regular']:
+                        reward = 1.0
+                if [x + 1, y] in env.deaths:
                     done_drag = True
-                    if types in ('death','regular'):
+                    if types in ['death', 'regular']:
                         reward_drag = -1.0
-
-                P[s][a].append((1-env.death_drag, s_next, reward, done))
-                P[s][a].append((env.death_drag,   s_drag, reward_drag, done_drag))
+                P[s][a].append((1 - env.death_drag, s_next, reward, done))
+                P[s][a].append((env.death_drag, s_drag, reward_drag, done_drag))
     return P
+
+# def MDP_lifegate(env, types='regular', deadend_threshold=0.7):
+#     P = {}
+#     width, height = env.scr_w, env.scr_h
+#     for y in range(height):
+#         for x in range(width):
+#             s = y * width + x
+#             P[s] = {}
+#             if [x, y] in env.barriers:
+#                 continue
+#             for a in env.legal_actions:
+#                 P[s][a] = []
+#                 new_x, new_y = x, y
+#                 reward, done = 0.0, False
+#
+#                 # dead-end special drag
+#                 if [x, y] in env.dead_ends:
+#                     if [x+1, y] in env.deaths:
+#                         done = True
+#                         if types in ('death','regular'):
+#                             reward = -1.0
+#                     P[s][a].append((deadend_threshold, s+1, reward, done))
+#                     P[s][a].append((0.3, s, 0.0, False))
+#                     continue
+#
+#                 # terminal death
+#                 if [new_x, new_y] in env.deaths:
+#                     if types in ('death','regular'):
+#                         reward = -1.0
+#                     P[s][a].append((1.0, s, reward, True))
+#                     continue
+#                 # terminal recovery
+#                 if [new_x, new_y] in env.recoveries:
+#                     if types in ('recovery','regular'):
+#                         reward = +1.0
+#                     P[s][a].append((1.0, s, reward, True))
+#                     continue
+#
+#                 # move
+#                 if a==1: new_y -= 1
+#                 elif a==2: new_y += 1
+#                 elif a==3: new_x -= 1
+#                 elif a==4: new_x += 1
+#
+#                 # bounce off
+#                 if (new_x<0 or new_y<0 or new_x>=width or new_y>=height
+#                   or [new_x,new_y] in env.barriers):
+#                     new_x, new_y = x, y
+#
+#                 s_next = new_y*width + new_x
+#                 s_drag = s+1
+#                 reward_drag, done_drag = 0.0, False
+#
+#                 if [new_x,new_y] in env.deaths:
+#                     done = True
+#                     if types in ('death','regular'):
+#                         reward = -1.0
+#                 elif [new_x,new_y] in env.recoveries:
+#                     done = True
+#                     if types in ('recovery','regular'):
+#                         reward = +1.0
+#
+#                 if [x+1, y] in env.deaths:
+#                     done_drag = True
+#                     if types in ('death','regular'):
+#                         reward_drag = -1.0
+#
+#                 P[s][a].append((1-env.death_drag, s_next, reward, done))
+#                 P[s][a].append((env.death_drag,   s_drag, reward_drag, done_drag))
+#     return P
 
 def bad_policies(Q_d, env_death, env, threshold):
     env_death.P = MDP_lifegate(env, types='death', deadend_threshold=threshold)
@@ -184,7 +246,7 @@ if __name__ == "__main__":
     dt_vals   = np.linspace(0,1,10)
 
     search_and_plot(env, env_death,
-                    gamma=0.9,
+                    gamma=1,
                     zeta_vals=zeta_vals,
                     dt_vals=dt_vals,
                     barrier_states=barrier_states,

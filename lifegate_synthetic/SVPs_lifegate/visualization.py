@@ -6,6 +6,33 @@ from lifegate_for_SVPs import LifeGate
 from SVPs_algos import value_iter, value_iter_near_greedy_prob, V2Q, value_iter_near_greedy
 
 
+def visualize_lifegate(barrier_states, lifegate_states, dead_end, deads_states):
+    grid_size = 10
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.set_xlim(0, grid_size)
+    ax.set_ylim(0, grid_size)
+    ax.invert_yaxis()
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.axis('on')
+
+    def draw_cells(states, color):
+        for s in states:
+            y = s // grid_size
+            x = s % grid_size
+            rect = patches.Rectangle((x, y), 1, 1, facecolor=color, edgecolor=color)
+            ax.add_patch(rect)
+
+    draw_cells(barrier_states, "gray")
+    draw_cells(lifegate_states, "blue")
+    draw_cells(dead_end, "yellow")
+    draw_cells(deads_states, "red")
+
+    plt.tight_layout()
+    plt.show()
+
+
 def visualize_v_grid(grid, title="V-Grid Heatmap", cmap="RdBu", vmin=None, vmax=None):
     plt.imshow(grid, cmap=cmap, origin='upper', vmin=vmin, vmax=vmax)
     plt.colorbar(label="Value")
@@ -24,14 +51,28 @@ def visualize_svp(π, barrier_states, lifegate_states, dead_end, deads_states, t
         3: (-0.4, 0),
         4: (0.4, 0),
     }
-    ax.set_xlim(-0.5, grid_size - 0.5)
-    ax.set_ylim(-0.5, grid_size - 0.5)
+
+    ax.set_xlim(0, grid_size)
+    ax.set_ylim(0, grid_size)
     ax.invert_yaxis()
-    ax.set_xticks(np.arange(-0.5, grid_size, 1))
-    ax.set_yticks(np.arange(-0.5, grid_size, 1))
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    ax.grid(which='major', color='black', linewidth=1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.axis('on')
+
+    # Draw color regions
+    def draw_cells(states, color):
+        for s in states:
+            y = s // grid_size
+            x = s % grid_size
+            rect = patches.Rectangle((x, y), 1, 1, facecolor=color, edgecolor=color)
+            ax.add_patch(rect)
+
+    draw_cells(barrier_states, "gray")
+    draw_cells(lifegate_states, "blue")
+    draw_cells(dead_end, "yellow")
+    draw_cells(deads_states, "red")
+
+    # Draw arrows
     arrow_style = dict(arrowstyle="->", color="green", lw=2)
     for y in range(grid_size):
         for x in range(grid_size):
@@ -42,31 +83,12 @@ def visualize_svp(π, barrier_states, lifegate_states, dead_end, deads_states, t
                 if π[s, a] == 1:
                     dx, dy = arrow_offsets[a]
                     if a == 0:
-                        ax.plot(x, y, 'o', markersize=4, color="green")
+                        ax.plot(x + 0.5, y + 0.5, 'o', markersize=4, color="green")
                     else:
-                        x_end = x + dx
-                        y_end = y + dy
-                        ax.annotate("", xy=(x_end, y_end), xytext=(x, y), arrowprops=arrow_style)
-    for s in barrier_states:
-        y = s // grid_size
-        x = s % grid_size
-        rect = patches.Rectangle((x - 0.5, y - 0.5), 1, 1, facecolor="gray", edgecolor="none")
-        ax.add_patch(rect)
-    for s in lifegate_states:
-        y = s // grid_size
-        x = s % grid_size
-        rect = patches.Rectangle((x - 0.5, y - 0.5), 1, 1, facecolor="blue", edgecolor="none")
-        ax.add_patch(rect)
-    for s in dead_end:
-        y = s // grid_size
-        x = s % grid_size
-        rect = patches.Rectangle((x - 0.5, y - 0.5), 1, 1, facecolor="yellow", edgecolor="none")
-        ax.add_patch(rect)
-    for s in deads_states:
-        y = s // grid_size
-        x = s % grid_size
-        rect = patches.Rectangle((x - 0.5, y - 0.5), 1, 1, facecolor="red", edgecolor="none")
-        ax.add_patch(rect)
+                        x_end = x + 0.5 + dx
+                        y_end = y + 0.5 + dy
+                        ax.annotate("", xy=(x_end, y_end), xytext=(x + 0.5, y + 0.5), arrowprops=arrow_style)
+
     plt.title(title)
     plt.tight_layout()
     plt.show()
@@ -82,14 +104,28 @@ def visualize_ded(Q_d, barrier_states, lifegate_states, dead_end, deads_states, 
         3: (-0.4, 0),
         4: (0.4, 0),
     }
-    ax.set_xlim(-0.5, grid_size - 0.5)
-    ax.set_ylim(-0.5, grid_size - 0.5)
+
+    ax.set_xlim(0, grid_size)
+    ax.set_ylim(0, grid_size)
     ax.invert_yaxis()
-    ax.set_xticks(np.arange(-0.5, grid_size, 1))
-    ax.set_yticks(np.arange(-0.5, grid_size, 1))
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    ax.grid(which='major', color='black', linewidth=1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.axis('on')
+
+    # Draw color regions
+    def draw_cells(states, color):
+        for s in states:
+            y = s // grid_size
+            x = s % grid_size
+            rect = patches.Rectangle((x, y), 1, 1, facecolor=color, edgecolor=color)
+            ax.add_patch(rect)
+
+    draw_cells(barrier_states, "gray")
+    draw_cells(lifegate_states, "blue")
+    draw_cells(dead_end, "yellow")
+    draw_cells(deads_states, "red")
+
+    # Draw arrows
     arrow_style = dict(arrowstyle="->", color="red", lw=2)
     for y in range(grid_size):
         for x in range(grid_size):
@@ -98,31 +134,12 @@ def visualize_ded(Q_d, barrier_states, lifegate_states, dead_end, deads_states, 
                 if Q_d[s, a] <= -0.7:
                     dx, dy = arrow_offsets[a]
                     if a == 0:
-                        ax.plot(x, y, 'ko', markersize=4)
+                        ax.plot(x + 0.5, y + 0.5, 'o', markersize=4, color="red")
                     else:
-                        x_end = x + dx
-                        y_end = y + dy
-                        ax.annotate("", xy=(x_end, y_end), xytext=(x, y), arrowprops=arrow_style)
-    for s in barrier_states:
-        y = s // grid_size
-        x = s % grid_size
-        rect = patches.Rectangle((x - 0.5, y - 0.5), 1, 1, facecolor="gray", edgecolor="none")
-        ax.add_patch(rect)
-    for s in lifegate_states:
-        y = s // grid_size
-        x = s % grid_size
-        rect = patches.Rectangle((x - 0.5, y - 0.5), 1, 1, facecolor="blue", edgecolor="none")
-        ax.add_patch(rect)
-    for s in dead_end:
-        y = s // grid_size
-        x = s % grid_size
-        rect = patches.Rectangle((x - 0.5, y - 0.5), 1, 1, facecolor="yellow", edgecolor="none")
-        ax.add_patch(rect)
-    for s in deads_states:
-        y = s // grid_size
-        x = s % grid_size
-        rect = patches.Rectangle((x - 0.5, y - 0.5), 1, 1, facecolor="red", edgecolor="none")
-        ax.add_patch(rect)
+                        x_end = x + 0.5 + dx
+                        y_end = y + 0.5 + dy
+                        ax.annotate("", xy=(x_end, y_end), xytext=(x + 0.5, y + 0.5), arrowprops=arrow_style)
+
     plt.title(title)
     plt.tight_layout()
     plt.show()
@@ -166,6 +183,9 @@ def main():
     lifegate_states = [5, 6, 7]
     dead_ends = [45, 46, 47, 48, 55, 56, 57, 58, 65, 66, 67, 68, 75, 76, 77, 78, 85, 86, 87, 88, 95, 96, 97, 98]
     deads_states = [8, 9, 19, 29, 39, 49, 59, 69, 79, 89, 99]
+
+    # Visualize Lifegate Environment
+    visualize_lifegate(barrier_states, lifegate_states, dead_ends, deads_states)
 
     # Visualize V function grids
     visualize_v_grid(V_SVP_Grid, title="V_SVP Grid", vmin=V_SVP.min(), vmax=V_SVP.max())

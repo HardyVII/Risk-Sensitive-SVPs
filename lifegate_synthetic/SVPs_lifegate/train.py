@@ -24,7 +24,7 @@ def MDP_lifegate(env, types='regular', deadend_threshold=0.7):
                         if types in ['death', 'regular']:
                             reward = -1.0
                     P[s][a].append((deadend_threshold, s + 1, reward, done))
-                    P[s][a].append((0.3, s, 0, False))
+                    P[s][a].append((1 - deadend_threshold, s, 0, False))
                     continue
                 if [new_x, new_y] in env.deaths:
                     if types in ['death', 'regular']:
@@ -153,9 +153,9 @@ def train_and_save_results(filename="results/trained_results.pkl"):
     env.nA = env.nb_actions
 
     # Compute V_star using standard value iteration.
-    V_star, π_star = value_iter(env, gamma=0.9, theta=1e-10)
+    V_star, π_star = value_iter(env, gamma=1, theta=1e-10)
     # Compute the near-greedy SVP.
-    V_SVP, π_SVP, is_max_iter, iter = value_iter_near_greedy(env, gamma=0.9, zeta=0.01, V_star=V_star, theta=1e-10, max_iter=1000)
+    V_SVP, π_SVP, is_max_iter, iter = value_iter_near_greedy(env, gamma=1, zeta=0.1, V_star=V_star, theta=1e-10, max_iter=1000)
     π_SVP = cleaned(π_SVP, lifegate_states, deads_states, dead_ends)
     if is_max_iter: print("SVP does not converge")
     else: print("SVP converge")
