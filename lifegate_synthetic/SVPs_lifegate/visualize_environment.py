@@ -12,24 +12,35 @@ def visualize_lifegate(barrier_states, lifegate_states, dead_end, deads_states):
     ax.set_xlim(0, grid_size)
     ax.set_ylim(0, grid_size)
     ax.invert_yaxis()
+    ax.set_aspect('equal')
 
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.axis('on')
+    # draw a grid
+    ax.set_xticks(np.arange(0, grid_size+1, 1))
+    ax.set_yticks(np.arange(0, grid_size+1, 1))
+    ax.grid(which='both', color='black', linewidth=1)
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
 
     def draw_cells(states, color):
         for s in states:
             y = s // grid_size
             x = s % grid_size
-            rect = patches.Rectangle((x, y), 1, 1, facecolor=color, edgecolor=color)
+            # draw each cell with a black border
+            rect = patches.Rectangle(
+                (x, y), 1, 1,
+                facecolor=color,
+                edgecolor='black',
+                linewidth=1
+            )
             ax.add_patch(rect)
 
-    draw_cells(barrier_states, "gray")
+    draw_cells(barrier_states,  "gray")
     draw_cells(lifegate_states, "blue")
-    draw_cells(dead_end, "yellow")
-    draw_cells(deads_states, "red")
+    draw_cells(dead_end,        "yellow")
+    draw_cells(deads_states,    "red")
 
     plt.tight_layout()
+    plt.savefig('figures/LifeGate.pdf', bbox_inches='tight')
     plt.show()
 
 
@@ -37,11 +48,12 @@ def visualize_v_grid(grid, title="V-Grid Heatmap", cmap="RdBu", vmin=None, vmax=
     plt.imshow(grid, cmap=cmap, origin='upper', vmin=vmin, vmax=vmax)
     plt.colorbar(label="Value")
     plt.title(title)
-    plt.axis("off")
+    plt.axis("on")
+    plt.savefig(f'figures/{title}.pdf', bbox_inches='tight')
     plt.show()
 
 
-def visualize_svp(π, barrier_states, lifegate_states, dead_end, deads_states, title="Set-Valued Policy"):
+def visualize_svp(π, barrier_states, lifegate_states, dead_end, deads_states):
     grid_size = 10
     fig, ax = plt.subplots(figsize=(6, 6))
     arrow_offsets = {
@@ -89,12 +101,12 @@ def visualize_svp(π, barrier_states, lifegate_states, dead_end, deads_states, t
                         y_end = y + 0.5 + dy
                         ax.annotate("", xy=(x_end, y_end), xytext=(x + 0.5, y + 0.5), arrowprops=arrow_style)
 
-    plt.title(title)
     plt.tight_layout()
+    plt.savefig('figures/zeta = 0 svp policy.pdf', bbox_inches='tight')
     plt.show()
 
 
-def visualize_ded(Q_d, barrier_states, lifegate_states, dead_end, deads_states, title="Dead-End Policy"):
+def visualize_ded(Q_d, barrier_states, lifegate_states, dead_end, deads_states, death_threshold=0.7, title="Dead-End Policy"):
     grid_size = 10
     fig, ax = plt.subplots(figsize=(6, 6))
     arrow_offsets = {
@@ -131,7 +143,7 @@ def visualize_ded(Q_d, barrier_states, lifegate_states, dead_end, deads_states, 
         for x in range(grid_size):
             s = y * grid_size + x
             for a in range(5):
-                if Q_d[s, a] <= -0.7:
+                if Q_d[s, a] <= -death_threshold:
                     dx, dy = arrow_offsets[a]
                     if a == 0:
                         ax.plot(x + 0.5, y + 0.5, 'o', markersize=4, color="red")
@@ -140,8 +152,8 @@ def visualize_ded(Q_d, barrier_states, lifegate_states, dead_end, deads_states, 
                         y_end = y + 0.5 + dy
                         ax.annotate("", xy=(x_end, y_end), xytext=(x + 0.5, y + 0.5), arrowprops=arrow_style)
 
-    plt.title(title)
     plt.tight_layout()
+    plt.savefig('figures/theta = 1 ded policy.pdf', bbox_inches='tight')
     plt.show()
 
 
@@ -184,19 +196,17 @@ def main():
     dead_ends = [45, 46, 47, 48, 55, 56, 57, 58, 65, 66, 67, 68, 75, 76, 77, 78, 85, 86, 87, 88, 95, 96, 97, 98]
     deads_states = [8, 9, 19, 29, 39, 49, 59, 69, 79, 89, 99]
 
-    # Visualize Lifegate Environment
-    visualize_lifegate(barrier_states, lifegate_states, dead_ends, deads_states)
-
-    # Visualize V function grids
-    visualize_v_grid(V_SVP_Grid, title="V_SVP Grid", vmin=V_SVP.min(), vmax=V_SVP.max())
-    visualize_v_grid(V_r_Grid, title="V_R Grid", vmin=V_r.min(), vmax=V_r.max())
-    visualize_v_grid(V_d_Grid, title="V_D Grid", vmin=V_d.min(), vmax=V_d.max())
+    # # Visualize Lifegate Environment
+    # visualize_lifegate(barrier_states, lifegate_states, dead_ends, deads_states)
+    #
+    # # Visualize V function grids
+    # visualize_v_grid(V_SVP_Grid, title="V_SVP Grid", vmin=V_SVP.min(), vmax=V_SVP.max())
+    # visualize_v_grid(V_r_Grid, title="V_R Grid", cmap="Blues", vmin=V_r.min(), vmax=V_r.max())
+    # visualize_v_grid(V_d_Grid, title="V_D Grid", cmap="Reds_r", vmin=V_d.min(), vmax=V_d.max())
 
     # Visualize policies
-    visualize_svp(π_SVP, barrier_states, lifegate_states, dead_ends, deads_states, title="Set-Valued Policy (SVP)")
-    visualize_ded(Q_d, barrier_states, lifegate_states, dead_ends, deads_states,
-                  title="Dead-End Policy")
-
+    visualize_svp(π_SVP, barrier_states, lifegate_states, dead_ends, deads_states)
+    visualize_ded(Q_d, barrier_states, lifegate_states, dead_ends, deads_states, death_threshold=1)
 
 if __name__ == "__main__":
     main()
