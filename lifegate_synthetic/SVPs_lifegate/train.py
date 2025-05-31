@@ -155,7 +155,7 @@ def train_and_save_results(filename="results/trained_results.pkl"):
     # Compute V_star using standard value iteration.
     V_star, π_star = value_iter(env, gamma=1, theta=1e-10)
     # Compute the near-greedy SVP.
-    V_SVP, π_SVP, is_max_iter, iter = value_iter_near_greedy(env, gamma=1, zeta=0.1, V_star=V_star, theta=1e-10, max_iter=1000)
+    V_SVP, π_SVP, is_max_iter, iter = value_iter_near_greedy(env, gamma=1, zeta=0, V_star=V_star, theta=1e-10, max_iter=1000)
     π_SVP = cleaned(π_SVP, lifegate_states, deads_states, dead_ends)
     if is_max_iter: print("SVP does not converge")
     else: print("SVP converge")
