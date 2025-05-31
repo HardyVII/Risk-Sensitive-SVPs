@@ -34,24 +34,6 @@ def visualize_inconsistency_heatmap(zeta_vals, dt_vals, incons_map):
         ax.add_patch(rect)
     plt.tight_layout()
 
-# def visualize_inconsistency_heatmap(zeta_vals, dt_vals, incons_map):
-#     fig, ax = plt.subplots(figsize=(6,5))
-#     im = ax.imshow(incons_map, origin='lower', cmap='Reds', vmin=0, vmax=1, aspect='auto')
-#     ax.set_xticks(np.arange(len(zeta_vals)))
-#     ax.set_xticklabels([f"{z:.2f}" for z in zeta_vals], rotation=45)
-#     ax.set_yticks(np.arange(len(dt_vals)))
-#     ax.set_yticklabels([f"{dt:.2f}" for dt in dt_vals])
-#     ax.set_xlabel("ζ (zeta)")
-#     ax.set_ylabel("deadend_threshold")
-#     ax.set_title("Policy Inconsistency\n(× = fully consistent)")
-#     plt.colorbar(im, ax=ax, label="Frac. conflicting states")
-#     # overlay green X on zero‐conflict
-#     for i in range(incons_map.shape[0]):
-#         for j in range(incons_map.shape[1]):
-#             if incons_map[i,j] == 0:
-#                 ax.text(j, i, '×', ha='center', va='center', color='green', fontsize=14)
-#     plt.tight_layout()
-
 def visualize_svp_size(zeta_vals, dt_vals, svp_map):
     # pick every 5th index for ticks
     xtick_idxs = np.arange(0, len(zeta_vals), 5)
@@ -71,6 +53,7 @@ def visualize_svp_size(zeta_vals, dt_vals, svp_map):
     ax.set_title("Avg SVP policy size")
     cbar = plt.colorbar(im, ax=ax, label="actions per state")
     plt.tight_layout()
+    plt.savefig('figures/avg svp.pdf', bbox_inches='tight')
     plt.show()
 
 
@@ -90,28 +73,36 @@ def visualize_bad_size(zeta_vals, dt_vals, bad_map):
     ax.set_yticklabels(ytick_labels)
     ax.set_xlabel("ζ (zeta)")
     ax.set_ylabel("death_threshold")
-    ax.set_title("Avg bad policy size")
-    cbar = plt.colorbar(im, ax=ax, label="actions per state")
+    ax.set_title("Avg eliminated policy size")
+    cbar = plt.colorbar(im, ax=ax, label="eliminated actions per state")
     plt.tight_layout()
+    plt.savefig('figures/avg eliminated.pdf', bbox_inches='tight')
     plt.show()
 
-# def visualize_size_heatmaps(zeta_vals, dt_vals, svp_map, bad_map):
-#     fig, (ax1, ax2) = plt.subplots(1,2,figsize=(10,4))
-#     for ax, data, title in zip(
-#         (ax1,ax2),
-#         (svp_map, bad_map),
-#         ("Avg SVP policy size","Avg bad policy size")
-#     ):
-#         im = ax.imshow(data, origin='lower', cmap='viridis', aspect='auto')
-#         ax.set_xticks(np.arange(len(zeta_vals)))
-#         ax.set_xticklabels([f"{z:.2f}" for z in zeta_vals], rotation=45)
-#         ax.set_yticks(np.arange(len(dt_vals)))
-#         ax.set_yticklabels([f"{dt:.2f}" for dt in dt_vals])
-#         ax.set_xlabel("ζ (zeta)")
-#         ax.set_ylabel("deadend_threshold")
-#         ax.set_title(title)
-#         plt.colorbar(im, ax=ax, label="actions per state")
-#     plt.tight_layout()
+
+def avg_svp(zeta_vals, svp_map):
+    svp_size = svp_map[0]
+
+    fig, ax = plt.subplots(figsize=(6,6))
+    ax.plot(zeta_vals, svp_size, linestyle='-', color='green')
+    ax.set_xlabel("ζ (zeta)")
+    ax.set_ylabel("Avg SVP Size")
+    ax.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.savefig('figures/svp_vs_zeta.pdf', bbox_inches='tight')
+    plt.show()
+
+def avg_ded(dt_vals, ded_map):
+    mean_bad = ded_map.mean(axis=1)
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.plot(dt_vals, mean_bad, color='red', linestyle='-')
+    ax.set_xlabel("death_threshold")
+    ax.set_ylabel("Avg DeD size")
+    ax.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.savefig('figures/ded_vs_dt.pdf', bbox_inches='tight')
+    plt.show()
 
 if __name__ == "__main__":
     # load trained maps
@@ -125,7 +116,9 @@ if __name__ == "__main__":
     bad_size_map  = data['bad_size_map']
 
     # draw
-    visualize_inconsistency_heatmap(zeta_vals, dt_vals, incons_map)
-    visualize_svp_size(zeta_vals, dt_vals, svp_size_map)
-    visualize_bad_size(zeta_vals, dt_vals, bad_size_map)
+    # visualize_inconsistency_heatmap(zeta_vals, dt_vals, incons_map)
+    # visualize_svp_size(zeta_vals, dt_vals, svp_size_map)
+    # visualize_bad_size(zeta_vals, dt_vals, bad_size_map)
+    # avg_svp(zeta_vals, svp_size_map)
+    # avg_ded(dt_vals, bad_size_map)
     plt.show()
